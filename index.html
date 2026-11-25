@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#4f46e5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Transcriptor">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>Transcriptor</title>
+<style>
+:root{
+  --bg:#f5f6fb;--card:#ffffff;--text:#151827;--muted:#6b7086;--line:#e4e6ef;
+  --brand:#4f46e5;--brand2:#6366f1;--brandSoft:#eef0ff;--rec:#e11d48;--recSoft:#ffe4ea;
+  --ok:#0f9d6b;--warn:#b45309;--warnSoft:#fff6e5;--err:#c0262d;--errSoft:#fdecec;
+  --shadow:0 2px 10px rgba(20,24,60,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0f1117;--card:#191c26;--text:#eceef6;--muted:#9aa0b8;--line:#2a2e3c;
+  --brandSoft:#23264a;--recSoft:#3a1620;--warnSoft:#33270f;--errSoft:#3a1618;--shadow:none}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(env(safe-area-inset-top) + 12px) 16px 10px;display:flex;align-items:center;gap:8px;max-width:680px;margin:0 auto}
+.top h1{font-size:21px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.back{background:none;border:0;color:var(--brand);font-size:17px;padding:6px 4px;cursor:pointer}
+main{max-width:680px;margin:0 auto;padding:4px 16px calc(96px + env(safe-area-inset-bottom))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.warn{background:var(--warnSoft);border-color:transparent;color:var(--text)}
+.err{background:var(--errSoft);border-color:transparent}
+.big{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:84px;border-radius:20px;border:0;font-size:19px;font-weight:650;cursor:pointer;margin-bottom:12px}
+.big.rec{background:var(--rec);color:#fff}
+.big.up{background:var(--card);color:var(--text);border:1.5px dashed var(--line)}
+.dot{width:16px;height:16px;border-radius:50%;background:#fff;display:inline-block}
+.hint{color:var(--muted);font-size:14px;margin:4px 2px 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-weight:600;font-size:15px}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.danger{color:var(--err)}
+.btn.block{width:100%}
+.btn:disabled{opacity:.5}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>.btn{flex:1}
+label.lbl{display:block;font-size:14px;color:var(--muted);margin:14px 0 6px;font-weight:600}
+input[type=text],input[type=password],select{width:100%;min-height:46px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{min-width:48px;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-weight:600}
+.chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}
+.switch small{display:block;color:var(--muted);font-size:13px}
+.tog{position:relative;width:52px;height:30px;flex:none}
+.tog input{opacity:0;width:0;height:0}
+.tog span{position:absolute;inset:0;background:var(--line);border-radius:30px;transition:.2s}
+.tog span:before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.tog input:checked+span{background:var(--brand)}
+.tog input:checked+span:before{transform:translateX(22px)}
+/* grabación */
+.recbox{text-align:center;padding:28px 16px}
+.timer{font-size:52px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:1px}
+.recstate{display:inline-flex;align-items:center;gap:8px;color:var(--rec);font-weight:700}
+.recstate i{width:10px;height:10px;border-radius:50%;background:var(--rec);animation:blink 1.1s infinite}
+.recstate.paused{color:var(--muted)}.recstate.paused i{background:var(--muted);animation:none}
+@keyframes blink{50%{opacity:.2}}
+.meter{height:8px;background:var(--line);border-radius:8px;overflow:hidden;margin:18px auto;max-width:320px}
+.meter b{display:block;height:100%;width:0;background:var(--rec);transition:width .08s}
+/* progreso */
+.spin{width:44px;height:44px;border:4px solid var(--brandSoft);border-top-color:var(--brand);border-radius:50%;animation:sp 1s linear infinite;margin:6px auto 14px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.bar{height:8px;background:var(--line);border-radius:8px;overflow:hidden;margin-top:12px}
+.bar b{display:block;height:100%;width:0;background:var(--brand);transition:width .2s}
+/* historial */
+.item{display:block;width:100%;text-align:left;cursor:pointer}
+.item h3{margin:0 0 4px;font-size:17px}
+.meta{color:var(--muted);font-size:13px;display:flex;gap:10px;flex-wrap:wrap}
+.prev{margin-top:6px;color:var(--muted);font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.badge{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--brandSoft);color:var(--brand)}
+.badge.e{background:var(--errSoft);color:var(--err)}
+.empty{text-align:center;color:var(--muted);padding:40px 10px}
+/* detalle */
+.titleIn{font-size:20px;font-weight:700;border:0!important;background:transparent!important;padding:0!important;min-height:0!important}
+.spk{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-weight:600;font-size:14px}
+.spk i{width:10px;height:10px;border-radius:50%}
+.utt{padding:12px 0;border-top:1px solid var(--line)}
+.utt:first-child{border-top:0;padding-top:0}
+.uh{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
+.uh b{font-size:14px}
+.uh time{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.utt p{margin:0;white-space:pre-wrap}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* nav */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
+.tabs div{display:flex;max-width:680px;width:100%}
+.tabs button{flex:1;background:none;border:0;padding:10px 0 12px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--muted);cursor:pointer}
+.tabs button span{font-size:22px;line-height:1}
+.tabs button.on{color:var(--brand);font-weight:700}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1d2030;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:20;max-width:90vw;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+ol.steps{padding-left:20px;margin:8px 0 0;color:var(--muted);font-size:14px}
+ol.steps li{margin-bottom:4px}
+a{color:var(--brand)}
+@media (min-width:700px){.big{min-height:96px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <button class="back" id="backBtn" hidden>‹ Atrás</button>
+  <h1 id="topTitle">Transcriptor</h1>
+</header>
+
+<main>
+  <!-- NUEVA -->
+  <section id="v-new">
+    <div id="keyWarn" class="card warn" hidden>
+      Antes de empezar, pega tu clave de AssemblyAI en <b>Ajustes</b>.
+      <div style="margin-top:10px"><button class="btn primary" data-go="settings">Ir a Ajustes</button></div>
+    </div>
+
+    <div id="pickStep">
+      <button class="big rec" id="startRec"><span class="dot"></span>Grabar reunión</button>
+      <label class="big up">📁&nbsp; Subir un audio guardado
+        <input type="file" id="fileIn" accept="audio/*,video/*,.m4a,.opus,.ogg,.oga,.mp3,.wav,.aac,.amr,.flac,.webm" hidden>
+      </label>
+      <p class="hint">Sirve para reuniones presenciales, clases y notas de voz (también las de WhatsApp).</p>
+    </div>
+
+    <div id="recStep" class="card recbox" hidden>
+      <div class="recstate" id="recState"><i></i><span>Grabando</span></div>
+      <div class="timer" id="timer">00:00</div>
+      <div class="meter"><b id="meter"></b></div>
+      <p class="hint" style="margin-bottom:16px">Deja el celular cerca de quienes hablan y con la pantalla encendida.</p>
+      <div class="row">
+        <button class="btn" id="pauseBtn">⏸ Pausar</button>
+        <button class="btn primary" id="stopBtn">⏹ Terminar</button>
+      </div>
+      <button class="btn danger block" id="cancelRec" style="margin-top:10px;border:0">Descartar grabación</button>
+    </div>
+
+    <div id="cfgStep" class="card" hidden>
+      <div class="meta" id="audioInfo"></div>
+      <audio id="preview" controls style="width:100%;margin-top:10px"></audio>
+
+      <label class="lbl" for="titleIn">Nombre</label>
+      <input type="text" id="titleIn" maxlength="80">
+
+      <label class="lbl">¿Cuántas personas hablan? (aprox.)</label>
+      <div class="chips" id="peopleChips"></div>
+
+      <div class="switch">
+        <div>Guardar también el audio<small>Apagado = solo se guarda el texto y ocupa muy poco espacio</small></div>
+        <label class="tog"><input type="checkbox" id="saveAudio"><span></span></label>
+      </div>
+
+      <button class="btn primary block" id="goBtn" style="margin-top:18px;min-height:54px;font-size:17px">✨ Transcribir</button>
+      <button class="btn danger block" id="discardBtn" style="margin-top:8px;border:0">Descartar</button>
+    </div>
+
+    <div id="progStep" class="card" style="text-align:center" hidden>
+      <div class="spin"></div>
+      <b id="progText">Subiendo audio…</b>
+      <div class="bar"><b id="progBar"></b></div>
+    </div>
+  </section>
+
+  <!-- HISTORIAL -->
+  <section id="v-history" hidden><div id="histList"></div></section>
+
+  <!-- DETALLE -->
+  <section id="v-detail" hidden><div id="detail"></div></section>
+
+  <!-- AJUSTES -->
+  <section id="v-settings" hidden>
+    <div class="card">
+      <b>Clave de AssemblyAI</b>
+      <p class="hint">Es el servicio que convierte el audio en texto y separa a las personas. Se guarda solo en este dispositivo.</p>
+      <label class="lbl" for="keyIn">Clave (API key)</label>
+      <input type="password" id="keyIn" autocomplete="off" placeholder="Pega aquí tu clave">
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="showKey">👁 Ver</button>
+        <button class="btn" id="testKey">Probar</button>
+        <button class="btn primary" id="saveKey">Guardar</button>
+      </div>
+      <ol class="steps">
+        <li>Entra a <a href="https://www.assemblyai.com/dashboard/signup" target="_blank" rel="noopener">assemblyai.com</a> y crea una cuenta gratis.</li>
+        <li>En el panel, copia tu <b>API key</b>.</li>
+        <li>Pégala aquí y toca <b>Guardar</b>.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <label class="lbl" for="langSel" style="margin-top:0">Idioma de los audios</label>
+      <select id="langSel">
+        <option value="es">Español</option>
+        <option value="auto">Detectar automáticamente</option>
+        <option value="en">Inglés</option>
+        <option value="pt">Portugués</option>
+      </select>
+      <div class="switch">
+        <div>Borrar el audio de AssemblyAI al terminar<small>Más privacidad: la copia queda solo en tu celular</small></div>
+        <label class="tog"><input type="checkbox" id="purgeSel"><span></span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <b>Instalar en el celular</b>
+      <ol class="steps">
+        <li><b>Android (Chrome):</b> menú ⋮ → <i>Agregar a pantalla principal</i> o <i>Instalar app</i>.</li>
+        <li><b>iPhone / iPad (Safari):</b> botón Compartir ⬆ → <i>Agregar a inicio</i>.</li>
+        <li>Las mejoras llegan solas: solo ábrela con internet.</li>
+      </ol>
+    </div>
+
+    <div class="card meta" id="storageInfo" style="display:block"></div>
+  </section>
+</main>
+
+<nav class="tabs"><div>
+  <button data-go="new" class="on"><span>🎙️</span>Nueva</button>
+  <button data-go="history"><span>🗂️</span>Historial</button>
+  <button data-go="settings"><span>⚙️</span>Ajustes</button>
+</div></nav>
+<div class="toast" id="toast"></div>
+
+<script>
+const VERSION = '1.0.0';
+const API = 'https://api.assemblyai.com/v2';
+const COLORS = ['#4f46e5','#e11d48','#0f9d6b','#d97706','#0891b2','#9333ea','#db2777','#65a30d','#2563eb','#ea580c'];
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- ajustes guardados ---------- */
+const store = {
+  get(k, d=''){ try{ const v = localStorage.getItem(k); return v === null ? d : v; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+};
+const getKey = () => store.get('aai_key').trim();
+
+/* ---------- base de datos local (IndexedDB) ---------- */
+let dbp;
+function db(){
+  if(!dbp) dbp = new Promise((res, rej) => {
+    const r = indexedDB.open('transcriptor', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('items', {keyPath:'id'});
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+  return dbp;
+}
+async function tx(mode, fn){
+  const d = await db();
+  return new Promise((res, rej) => {
+    const t = d.transaction('items', mode);
+    const req = fn(t.objectStore('items'));
+    t.oncomplete = () => res(req ? req.result : undefined);
+    t.onerror = () => rej(t.error);
+  });
+}
+const dbPut = o => tx('readwrite', s => s.put(o));
+const dbGet = id => tx('readonly', s => s.get(id));
+const dbAll = () => tx('readonly', s => s.getAll());
+const dbDel = id => tx('readwrite', s => s.delete(id));
+
+/* ---------- utilidades ---------- */
+function fmtTime(ms){
+  const t = Math.max(0, Math.floor((ms||0)/1000)), h = Math.floor(t/3600), m = Math.floor(t%3600/60), s = t%60;
+  const p = n => String(n).padStart(2,'0');
+  return h ? `${h}:${p(m)}:${p(s)}` : `${p(m)}:${p(s)}`;
+}
+function fmtDate(ts){
+  return new Date(ts).toLocaleString('es-PE', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+}
+const fmtMB = b => (b/1048576).toFixed(b < 10485760 ? 1 : 0) + ' MB';
+let toastT;
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2800);
+}
+function apiErr(status, body){
+  if(status === 401 || status === 403) return 'La clave de AssemblyAI no es válida. Revísala en Ajustes.';
+  if(status === 402) return 'Tu cuenta de AssemblyAI no tiene saldo disponible.';
+  if(status === 413) return 'El archivo es demasiado grande.';
+  try{ const j = JSON.parse(body); if(j.error) return j.error; }catch(e){}
+  return 'Error del servicio (' + status + ').';
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- navegación ---------- */
+let current = 'new', openId = null;
+function show(v){
+  current = v;
+  ['new','history','detail','settings'].forEach(x => $('#v-'+x).hidden = x !== v);
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.go === v || (v==='detail' && b.dataset.go==='history')));
+  $('#backBtn').hidden = v !== 'detail';
+  $('#topTitle').textContent = {new:'Transcriptor', history:'Historial', detail:'Transcripción', settings:'Ajustes'}[v];
+  if(v === 'new') $('#keyWarn').hidden = !!getKey();
+  if(v === 'history') renderHistory();
+  if(v === 'settings') renderSettings();
+  window.scrollTo(0,0);
+}
+document.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if(g) show(g.dataset.go); });
+$('#backBtn').onclick = () => show('history');
+
+/* ---------- pasos de "Nueva" ---------- */
+function step(name){ ['pick','rec','cfg','prog'].forEach(s => $('#'+s+'Step').hidden = s !== name); }
+let pending = null; // {blob, name, duration}
+let people = '?';
+
+function buildChips(){
+  const opts = [['?','No sé'],['1','1'],['2','2'],['3','3'],['4','4'],['5','5'],['6+','6+']];
+  $('#peopleChips').innerHTML = opts.map(([v,l]) => `<button class="chip${v===people?' on':''}" data-p="${v}">${l}</button>`).join('');
+}
+$('#peopleChips').onclick = e => { const c = e.target.closest('[data-p]'); if(!c) return; people = c.dataset.p; buildChips(); };
+
+function setPending(blob, name, duration){
+  if(pending && pending.url) URL.revokeObjectURL(pending.url);
+  pending = {blob, name, duration, url: URL.createObjectURL(blob)};
+  $('#preview').src = pending.url;
+  const now = new Date();
+  $('#titleIn').value = name || ('Reunión ' + now.toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit'}) + ' ' + now.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}));
+  people = '?'; buildChips();
+  $('#saveAudio').checked = false;
+  updateInfo();
+  step('cfg');
+}
+function updateInfo(){
+  if(!pending) return;
+  const d = pending.duration ? '⏱ ' + fmtTime(pending.duration) : '';
+  $('#audioInfo').innerHTML = `<span>🎧 ${fmtMB(pending.blob.size)}</span><span>${d}</span>`;
+}
+$('#preview').addEventListener('loadedmetadata', () => {
+  const d = $('#preview').duration;
+  if(pending && !pending.duration && isFinite(d)){ pending.duration = d*1000; updateInfo(); }
+});
+
+$('#fileIn').onchange = e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if(!f) return;
+  setPending(f, f.name.replace(/\.[^.]+$/, ''), 0);
+};
+$('#discardBtn').onclick = () => {
+  if(pending && !confirm('¿Descartar este audio?')) return;
+  if(pending) URL.revokeObjectURL(pending.url); pending = null; $('#preview').removeAttribute('src'); step('pick');
+};
+
+/* ---------- grabación ---------- */
+let rec, stream, chunks = [], accMs = 0, startedAt = 0, tick, wakeLock, actx, raf, cancelled = false;
+const elapsed = () => accMs + (rec && rec.state === 'recording' ? Date.now() - startedAt : 0);
+
+$('#startRec').onclick = async () => {
+  if(!navigator.mediaDevices || !window.MediaRecorder){ toast('Este navegador no permite grabar. Prueba con Chrome o Safari actualizado.'); return; }
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, autoGainControl:true}});
+  }catch(e){ toast('No se pudo usar el micrófono. Revisa los permisos del navegador.'); return; }
+  const mime = ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/aac'].find(m => MediaRecorder.isTypeSupported(m)) || '';
+  const opts = {audioBitsPerSecond: 32000}; if(mime) opts.mimeType = mime;
+  try{ rec = new MediaRecorder(stream, opts); }catch(e){ rec = new MediaRecorder(stream); }
+  chunks = []; accMs = 0; cancelled = false;
+  rec.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
+  rec.onstop = () => {
+    const dur = accMs;
+    const blob = new Blob(chunks, {type: rec.mimeType || mime || 'audio/webm'});
+    stopMedia();
+    if(cancelled || !blob.size){ step('pick'); return; }
+    setPending(blob, '', dur);
+  };
+  rec.start(1000); startedAt = Date.now();
+  setRecUI(); step('rec');
+  tick = setInterval(() => $('#timer').textContent = fmtTime(elapsed()), 250);
+  try{ wakeLock = await navigator.wakeLock?.request('screen'); }catch(e){}
+  meter();
+};
+function meter(){
+  try{
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = actx.createMediaStreamSource(stream), an = actx.createAnalyser();
+    an.fftSize = 512; src.connect(an);
+    const buf = new Uint8Array(an.fftSize);
+    const loop = () => {
+      an.getByteTimeDomainData(buf);
+      let m = 0; for(const v of buf) m = Math.max(m, Math.abs(v-128));
+      $('#meter').style.width = (rec && rec.state === 'recording' ? Math.min(100, m/64*100) : 0) + '%';
+      raf = requestAnimationFrame(loop);
+    };
+    loop();
+  }catch(e){}
+}
+function setRecUI(){
+  const paused = rec.state === 'paused';
+  $('#recState').classList.toggle('paused', paused);
+  $('#recState span').textContent = paused ? 'En pausa' : 'Grabando';
+  $('#pauseBtn').textContent = paused ? '▶ Continuar' : '⏸ Pausar';
+}
+$('#pauseBtn').onclick = () => {
+  if(rec.state === 'recording'){ accMs += Date.now() - startedAt; rec.pause(); }
+  else if(rec.state === 'paused'){ startedAt = Date.now(); rec.resume(); }
+  setRecUI();
+};
+$('#stopBtn').onclick = () => { if(rec.state === 'recording') accMs += Date.now() - startedAt; rec.stop(); };
+$('#cancelRec').onclick = () => {
+  if(!confirm('¿Descartar la grabación? Se perderá el audio.')) return;
+  cancelled = true; rec.stop();
+};
+function stopMedia(){
+  clearInterval(tick); cancelAnimationFrame(raf);
+  try{ stream.getTracks().forEach(t => t.stop()); }catch(e){}
+  try{ actx && actx.close(); }catch(e){}
+  try{ wakeLock && wakeLock.release(); }catch(e){}
+  wakeLock = null;
+}
+document.addEventListener('visibilitychange', async () => {
+  if(document.visibilityState === 'visible' && rec && rec.state !== 'inactive' && !wakeLock){
+    try{ wakeLock = await navigator.wakeLock?.request('screen'); }catch(e){}
+  }
+});
+window.addEventListener('beforeunload', e => { if(rec && rec.state !== 'inactive'){ e.preventDefault(); e.returnValue = ''; } });
+
+/* ---------- transcripción ---------- */
+function uploadXHR(blob, key, onp){
+  return new Promise((res, rej) => {
+    const x = new XMLHttpRequest();
+    x.open('POST', API + '/upload');
+    x.setRequestHeader('authorization', key);
+    x.setRequestHeader('content-type', 'application/octet-stream');
+    x.upload.onprogress = e => { if(e.lengthComputable) onp(e.loaded / e.total); };
+    x.onload = () => {
+      if(x.status >= 200 && x.status < 300){
+        try{ res(JSON.parse(x.responseText).upload_url); }catch(e){ rej(new Error('Respuesta inesperada del servicio.')); }
+      } else rej(new Error(apiErr(x.status, x.responseText)));
+    };
+    x.onerror = () => rej(new Error('No hay conexión con AssemblyAI. Revisa tu internet.'));
+    x.send(blob);
+  });
+}
+function prog(text, p){ $('#progText').textContent = text; $('#progBar').style.width = Math.round((p||0)*100) + '%'; }
+
+$('#goBtn').onclick = async () => {
+  const key = getKey();
+  if(!key){ toast('Primero guarda tu clave en Ajustes.'); show('settings'); return; }
+  if(!pending) return;
+  const p = pending;
+  const item = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    title: $('#titleIn').value.trim() || 'Sin nombre',
+    date: Date.now(), duration: p.duration || 0, people,
+    status: 'subiendo', names: {}, utts: [], text: '',
+    audio: $('#saveAudio').checked ? p.blob : null, mime: p.blob.type || ''
+  };
+  await dbPut(item);
+  step('prog'); prog('Subiendo audio… 0%', 0);
+  try{
+    const url = await uploadXHR(p.blob, key, f => prog('Subiendo audio… ' + Math.round(f*100) + '%', f));
+    prog('Enviando a transcribir…', 1);
+    const body = {audio_url: url, punctuate: true, format_text: true};
+    const lang = store.get('lang', 'es');
+    if(lang === 'auto') body.language_detection = true; else body.language_code = lang;
+    if(people !== '1'){
+      body.speaker_labels = true;
+      if(people !== '?'){
+        const n = people === '6+' ? 6 : +people;
+        body.speaker_options = {
+          min_speakers_expected: n <= 2 ? n : n - 1,
+          max_speakers_expected: people === '6+' ? 12 : n + 1
+        };
+      }
+    }
+    const r = await fetch(API + '/transcript', {method:'POST', headers:{authorization:key, 'content-type':'application/json'}, body: JSON.stringify(body)});
+    if(!r.ok) throw new Error(apiErr(r.status, await r.text()));
+    const j = await r.json();
+    item.aaiId = j.id; item.status = 'procesando';
+    await dbPut(item);
+  }catch(e){
+    item.status = 'error'; item.error = e.message; await dbPut(item);
+  }
+  URL.revokeObjectURL(p.url); pending = null; $('#preview').removeAttribute('src');
+  step('pick');
+  openDetail(item.id);
+  if(item.status === 'procesando') poll(item.id);
+};
+
+const polling = new Set();
+async function poll(id){
+  if(polling.has(id)) return; polling.add(id);
+  try{
+    while(true){
+      const item = await dbGet(id);
+      if(!item || item.status !== 'procesando') break;
+      const key = getKey(); if(!key) break;
+      let j;
+      try{
+        const r = await fetch(API + '/transcript/' + item.aaiId, {headers:{authorization:key}});
+        if(!r.ok){
+          if(r.status === 401 || r.status === 404){ item.status='error'; item.error = apiErr(r.status, await r.text()); await dbPut(item); refresh(id); break; }
+          await sleep(6000); continue;
+        }
+        j = await r.json();
+      }catch(e){ await sleep(8000); continue; } // sin internet: reintenta
+      if(j.status === 'completed'){
+        await finish(item, j, key); refresh(id); break;
+      }
+      if(j.status === 'error'){
+        item.status = 'error'; item.error = j.error || 'No se pudo transcribir.'; await dbPut(item); refresh(id); break;
+      }
+      await sleep(3500);
+    }
+  } finally { polling.delete(id); }
+}
+async function finish(item, j, key){
+  let utts = (j.utterances || []).map(u => ({s:u.speaker, t:u.text, a:u.start}));
+  if(!utts.length){
+    try{
+      const r = await fetch(API + '/transcript/' + item.aaiId + '/paragraphs', {headers:{authorization:key}});
+      if(r.ok){ const pj = await r.json(); utts = (pj.paragraphs||[]).map(p => ({s:null, t:p.text, a:p.start})); }
+    }catch(e){}
+  }
+  if(!utts.length && j.text) utts = [{s:null, t:j.text, a:0}];
+  const names = {}; let k = 0;
+  for(const u of utts) if(u.s && !(u.s in names)) names[u.s] = 'Persona ' + (++k);
+  item.utts = utts; item.names = names; item.text = j.text || '';
+  if(j.audio_duration) item.duration = j.audio_duration * 1000;
+  item.lang = j.language_code || '';
+  item.status = 'listo';
+  await dbPut(item);
+  if(store.get('purge', '1') === '1'){
+    try{ await fetch(API + '/transcript/' + item.aaiId, {method:'DELETE', headers:{authorization:key}}); }catch(e){}
+  }
+}
+function refresh(id){
+  if(current === 'detail' && openId === id) renderDetail(id);
+  if(current === 'history') renderHistory();
+}
+
+/* ---------- historial ---------- */
+async function renderHistory(){
+  const items = (await dbAll()).sort((a,b) => b.date - a.date);
+  if(!items.length){ $('#histList').innerHTML = '<div class="empty">Aún no tienes transcripciones.<br>Graba o sube un audio desde <b>Nueva</b>.</div>'; return; }
+  $('#histList').innerHTML = items.map(it => {
+    const badge = it.status === 'listo' ? '' : it.status === 'error' ? '<span class="badge e">Error</span>' : '<span class="badge">Procesando…</span>';
+    const preview = it.utts && it.utts.length ? it.utts.slice(0,2).map(u => u.t).join(' ') : '';
+    const np = Object.keys(it.names||{}).length;
+    return `<button class="card item" data-open="${it.id}">
+      <h3>${esc(it.title)} ${badge}</h3>
+      <div class="meta"><span>${fmtDate(it.date)}</span>${it.duration?`<span>⏱ ${fmtTime(it.duration)}</span>`:''}${np?`<span>👥 ${np}</span>`:''}${it.audio?'<span>🎧</span>':''}</div>
+      ${preview?`<div class="prev">${esc(preview)}</div>`:''}
+    </button>`;
+  }).join('');
+}
+$('#histList').onclick = e => { const b = e.target.closest('[data-open]'); if(b) openDetail(b.dataset.open); };
+
+/* ---------- detalle ---------- */
+function openDetail(id){ openId = id; show('detail'); renderDetail(id); }
+async function renderDetail(id){
+  const it = await dbGet(id);
+  if(!it){ show('history'); return; }
+  const speakers = Object.keys(it.names||{});
+  const color = s => COLORS[speakers.indexOf(s) % COLORS.length];
+  let body = '';
+  if(it.status === 'procesando' || it.status === 'subiendo'){
+    body = `<div class="card" style="text-align:center"><div class="spin"></div><b>Transcribiendo…</b>
+      <p class="hint">Puede tardar unos minutos según la duración. Puedes salir de aquí; cuando vuelvas a abrir la app seguirá revisando.</p></div>`;
+  } else if(it.status === 'error'){
+    body = `<div class="card err"><b>No se pudo transcribir</b><p class="hint" style="color:inherit">${esc(it.error||'')}</p>
+      ${it.audio?'<button class="btn primary" id="retryBtn">Reintentar</button>':''}</div>`;
+  } else {
+    const spk = speakers.length ? `<div class="card"><div class="meta" style="margin-bottom:8px">Toca un nombre para cambiarlo</div><div class="chips">${
+      speakers.map(s => `<button class="spk" data-spk="${esc(s)}"><i style="background:${color(s)}"></i>${esc(it.names[s])}</button>`).join('')}</div></div>` : '';
+    const list = it.utts.map(u => `<div class="utt"><div class="uh">${u.s ? `<b style="color:${color(u.s)}">${esc(it.names[u.s]||u.s)}</b>` : ''}<time>${fmtTime(u.a)}</time></div><p>${esc(u.t)}</p></div>`).join('');
+    body = spk + `<div class="card">${list || '<p class="hint">No se detectó voz en el audio.</p>'}</div>`;
+  }
+  const ready = it.status === 'listo';
+  $('#detail').innerHTML = `
+    <div class="card">
+      <input type="text" class="titleIn" id="dTitle" value="${esc(it.title)}" maxlength="80">
+      <div class="meta" style="margin-top:6px"><span>${fmtDate(it.date)}</span>${it.duration?`<span>⏱ ${fmtTime(it.duration)}</span>`:''}${speakers.length?`<span>👥 ${speakers.length} personas</span>`:''}</div>
+    </div>
+    ${body}
+    ${it.audio ? `<div class="card"><audio controls style="width:100%" id="dAudio"></audio></div>` : ''}
+    <div class="actions">
+      ${ready ? `<button class="btn" id="copyBtn">📋 Copiar</button><button class="btn" id="shareBtn">📤 Compartir</button><button class="btn" id="txtBtn">⬇ Descargar texto</button>` : ''}
+      ${it.audio ? `<button class="btn" id="audBtn">⬇ Descargar audio</button><button class="btn" id="rmAudBtn">🗑 Quitar audio</button>` : ''}
+      <button class="btn danger" id="delBtn">🗑 Eliminar</button>
+    </div>`;
+  if(it.audio){ const u = URL.createObjectURL(it.audio); $('#dAudio').src = u; }
+  $('#dTitle').onchange = async e => { const x = await dbGet(id); x.title = e.target.value.trim() || 'Sin nombre'; await dbPut(x); toast('Nombre guardado'); };
+  $('#detail').querySelectorAll('[data-spk]').forEach(b => b.onclick = async () => {
+    const x = await dbGet(id), s = b.dataset.spk;
+    const n = prompt('Nombre para ' + x.names[s] + ':', x.names[s]);
+    if(n && n.trim()){ x.names[s] = n.trim(); await dbPut(x); renderDetail(id); }
+  });
+  if(ready){
+    $('#copyBtn').onclick = async () => { try{ await navigator.clipboard.writeText(toText(it)); toast('Copiado'); }catch(e){ toast('No se pudo copiar'); } };
+    $('#shareBtn').onclick = async () => {
+      const text = toText(it);
+      if(navigator.share){ try{ await navigator.share({title: it.title, text}); }catch(e){} }
+      else { try{ await navigator.clipboard.writeText(text); toast('Copiado (compartir no disponible aquí)'); }catch(e){} }
+    };
+    $('#txtBtn').onclick = () => download(new Blob([toText(it)], {type:'text/plain;charset=utf-8'}), safe(it.title) + '.txt');
+  }
+  if(it.audio){
+    $('#audBtn').onclick = () => download(it.audio, safe(it.title) + extFor(it.mime));
+    $('#rmAudBtn').onclick = async () => { if(!confirm('¿Quitar el audio? La transcripción se mantiene.')) return; const x = await dbGet(id); x.audio = null; await dbPut(x); renderDetail(id); toast('Audio eliminado'); };
+  }
+  $('#delBtn').onclick = async () => { if(!confirm('¿Eliminar esta transcripción? No se puede deshacer.')) return; await dbDel(id); show('history'); toast('Eliminado'); };
+  const rb = $('#retryBtn');
+  if(rb) rb.onclick = () => { setPending(it.audio, it.title, it.duration); dbDel(id); show('new'); step('cfg'); };
+}
+function toText(it){
+  const head = `${it.title}\n${fmtDate(it.date)}${it.duration ? ' · ' + fmtTime(it.duration) : ''}\n\n`;
+  return head + it.utts.map(u => `[${fmtTime(u.a)}] ${u.s ? (it.names[u.s]||u.s) + ': ' : ''}${u.t}`).join('\n\n') + '\n';
+}
+const safe = s => (s||'transcripcion').replace(/[\\/:*?"<>|]+/g, '').slice(0,60).trim() || 'transcripcion';
+const extFor = m => /mp4|m4a|aac/.test(m||'') ? '.m4a' : /ogg|opus/.test(m||'') ? '.ogg' : /mpeg|mp3/.test(m||'') ? '.mp3' : /wav/.test(m||'') ? '.wav' : '.webm';
+function download(blob, name){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+/* ---------- ajustes ---------- */
+async function renderSettings(){
+  $('#keyIn').value = getKey();
+  $('#langSel').value = store.get('lang', 'es');
+  $('#purgeSel').checked = store.get('purge', '1') === '1';
+  let s = `Versión ${VERSION}`;
+  try{
+    const items = await dbAll();
+    let audioBytes = 0, n = 0; for(const it of items) if(it.audio){ audioBytes += it.audio.size; n++; }
+    s += ` · ${items.length} transcripciones · audios guardados: ${n} (${fmtMB(audioBytes)})`;
+  }catch(e){}
+  $('#storageInfo').textContent = s;
+}
+$('#showKey').onclick = () => { const i = $('#keyIn'); i.type = i.type === 'password' ? 'text' : 'password'; };
+$('#saveKey').onclick = () => { store.set('aai_key', $('#keyIn').value.trim()); toast('Clave guardada'); };
+$('#testKey').onclick = async () => {
+  const k = $('#keyIn').value.trim(); if(!k){ toast('Pega una clave primero'); return; }
+  try{
+    const r = await fetch(API + '/transcript?limit=1', {headers:{authorization:k}});
+    toast(r.ok ? '✅ La clave funciona' : apiErr(r.status, await r.text()));
+  }catch(e){ toast('No hay conexión con AssemblyAI'); }
+};
+$('#langSel').onchange = e => store.set('lang', e.target.value);
+$('#purgeSel').onchange = e => store.set('purge', e.target.checked ? '1' : '0');
+
+/* ---------- arranque ---------- */
+buildChips();
+show('new');
+dbAll().then(items => items.filter(i => i.status === 'procesando').forEach(i => poll(i.id))).catch(()=>{});
+dbAll().then(items => items.filter(i => i.status === 'subiendo').forEach(async i => { i.status='error'; i.error='La subida se interrumpió.'; await dbPut(i); })).catch(()=>{});
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
